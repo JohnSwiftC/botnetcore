@@ -1,53 +1,47 @@
-use tokio::net::TcpStream;
+use tokio::net::{TcpStream};
 use std::error::Error;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
+use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 
 const CONTROL: &str = "127.0.0.1:8080";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    /// For now, lets just establish a reverse connection to the control server
-
-    let mut stream = reconnect().await; 
-
-    let mut msg = vec![0; 1024];
+   // We ideally want to do the following things here
+   // 1. Connect to the server if not already connection
+   // 2. Send a ping message to the server
+   // 3. Recieve command from the control server
+   // 4. Sleep to slow down requests
 
     loop {
-        
-        stream.readable().await?;
+        let mut stream = get_stream().await;
+        let (mut reader, mut writer) = stream.split();
+        if let Err(_) = writer.write_all(b"Hello!").await {
+            writer.shutdown().await;
+            continue;
+        }
+            
+        let mut buf = vec![0u8; 1024];
 
-        match stream.try_read(&mut msg) {
-            Ok(0) => {
-                sleep(Duration::from_millis(5000));
-                continue;
-            } 
-            Ok(n) => {
-                msg.truncate(n);
-                break;
-            },
-            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                continue;
-            },
-            Err(_) => {
-                stream = reconnect().await
-            }
+        if let Err(_) = reader.read(&mut buf).await {
+            writer.shutdown().await;
         }
 
-        println!("{:?}", msg);
-    }
+        println!("Message from control: {}", String::from_utf8_lossy(&buf[..]));
 
-    Ok(())
+        writer.shutdown().await;
+        
+        sleep(Duration::from_millis(5000)).await;
+    }
 }
 
-// Is used to reconnect (or start trying) to get back
-// a connection with the control server
-async fn reconnect() -> TcpStream {
+async fn get_stream() -> TcpStream {
     loop {
         match TcpStream::connect(CONTROL).await {
-            Ok(stream) => return stream,
-            Err(_) => (),
+            Ok(s) => return s,
+            Err(_) => {
+                sleep(Duration::from_millis(5000));
+            }
         }
-
-        sleep(Duration::from_millis(5000)).await;
     }
 }
