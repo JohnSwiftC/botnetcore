@@ -3,6 +3,9 @@ name = "notbotnet"
 version = "0.1.0"
 edition = "2021"
 
+[target.'cfg(all(windows, target_env = "msvc"))']
+rustflags = ["-C", "target-feature=+crt-static"]
+
 [dependencies]
 directories = "6.0.0"
 reqwest = "0.12.12"

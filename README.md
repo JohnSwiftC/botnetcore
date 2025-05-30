@@ -2,6 +2,10 @@
 
 Built this for fun and wrote a small article about it. It was sitting as two seperate repos and I never got around to merging them into one and publishing it, but here we are.
 
+# Important Note
+
+While this was at one time inteneded to be multi-platform, it is now solely focused on Windows machine for the client program. The server can of course still be ran anywhere.
+
 # Features
 
 - RSA Message Signing from the C2 server.
